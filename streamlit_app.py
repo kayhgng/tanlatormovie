@@ -56,8 +56,13 @@ if uploaded_file is not None:
         cleaned_lines = []
         temp_lines = []
         for line in lines:
-            if re.match(r'^\d+$', line) or re.match(r'^\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}$', line):
+            # Check for timestamp pattern
+            if re.match(r'^\d{2}:\d{2}:\d{2}[,.]\d{3} --> \d{2}:\d{2}:\d{2}[,.]\d{3}$', line):
                 continue
+            # Check for index pattern (just numbers)
+            if re.match(r'^\d+$', line):
+                continue
+            # If line is empty or not a timestamp/index, add to temp_lines
             if line == '':
                 if temp_lines:
                     cleaned_text = '\n'.join(temp_lines)
@@ -90,10 +95,11 @@ if uploaded_file is not None:
         # Reformat SRT with translated text
         new_lines = []
         text_iter = iter(translated_texts)
+        index = 1
         for line in lines:
             if re.match(r'^\d+$', line):
                 new_lines.append(line)
-            elif re.match(r'^\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}$', line):
+            elif re.match(r'^\d{2}:\d{2}:\d{2}[,.]\d{3} --> \d{2}:\d{2}:\d{2}[,.]\d{3}$', line):
                 new_lines.append(line)
                 try:
                     new_lines.append(next(text_iter))
@@ -101,6 +107,8 @@ if uploaded_file is not None:
                     break
             elif line == '':
                 new_lines.append(line)
+            else:
+                new_lines.append(line)  # Fallback in case of unexpected lines
 
         new_content = '\n'.join(new_lines)
 

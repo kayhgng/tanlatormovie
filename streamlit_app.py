@@ -80,7 +80,10 @@ if uploaded_file is not None:
         for text in texts:
             try:
                 translated = translator.translate(text, dest=target_language)
-                translated_texts.append(translated.text)
+                if translated and translated.text:
+                    translated_texts.append(translated.text)
+                else:
+                    st.error(f"Translation failed for text: {text}")
             except Exception as e:
                 st.error(f"Translation error: {e}")
 

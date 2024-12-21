@@ -23,12 +23,29 @@ st.markdown(
         color: white;
         border-radius: 20px;
         border: none;
+        margin-top: 10px;
     }
     .stTextInput > div > div > input {
         background-color: #2c3947;
         color: white;
         border: 1px solid #007fbf;
         border-radius: 20px;
+    }
+    .stTextInput > label {
+        color: white;
+    }
+    .stButton > button:hover {
+        background-color: #005f84;
+    }
+    .stDownloadButton > button {
+        background-color: white;
+        color: #007fbf;
+        border: 1px solid #007fbf;
+        border-radius: 20px;
+        margin-top: 10px;
+    }
+    .stDownloadButton > button:hover {
+        background-color: #e0f7fa;
     }
     .footer {
         text-align: center;
@@ -78,47 +95,53 @@ if uploaded_file is not None:
     texts = clean_and_extract(lines)
 
     # Choose Target Language
-    target_language = st.text_input("Enter target language code (e.g., 'en', 'fr'):").lower()
-    
+    st.markdown("Enter target language code (e.g., 'en', 'fr'):", unsafe_allow_html=True)
+    target_language = st.text_input("", value="", key="language_input")
+
     if st.button("Translate"):
-        translated_texts = []
-        for text in texts:
+        if not target_language:
+            st.error("Please enter a target language code.")
+        else:
+            translated_texts = []
             try:
-                translated = translator.translate(text, dest=target_language)
-                if translated and translated.text:
-                    translated_texts.append(translated.text)
+                for text in texts:
+                    translated = translator.translate(text, dest=target_language)
+                    if translated and translated.text:
+                        translated_texts.append(translated.text)
+                    else:
+                        st.error("Your SRT file is not in the correct format.")
+                        break
                 else:
-                    st.error(f"Translation failed for text: {text}")
+                    # Reformat SRT with translated text
+                    new_lines = []
+                    text_iter = iter(translated_texts)
+                    index = 1
+                    for line in lines:
+                        if re.match(r'^\d+$', line):
+                            new_lines.append(line)
+                        elif re.match(r'^\d{2}:\d{2}:\d{2}[,.]\d{3} --> \d{2}:\d{2}:\d{2}[,.]\d{3}$', line):
+                            new_lines.append(line)
+                            try:
+                                new_lines.append(next(text_iter))
+                            except StopIteration:
+                                break
+                        elif line == '':
+                            new_lines.append(line)
+                        else:
+                            new_lines.append(line)  # Fallback in case of unexpected lines
+
+                    new_content = '\n'.join(new_lines)
+
+                    # Download Button
+                    st.download_button(
+                        label="Download Translated SRT File",
+                        data=new_content,
+                        file_name="translated_subtitles.srt",
+                        mime="text/plain",
+                        key="download_button"
+                    )
             except Exception as e:
                 st.error(f"Translation error: {e}")
-
-        # Reformat SRT with translated text
-        new_lines = []
-        text_iter = iter(translated_texts)
-        index = 1
-        for line in lines:
-            if re.match(r'^\d+$', line):
-                new_lines.append(line)
-            elif re.match(r'^\d{2}:\d{2}:\d{2}[,.]\d{3} --> \d{2}:\d{2}:\d{2}[,.]\d{3}$', line):
-                new_lines.append(line)
-                try:
-                    new_lines.append(next(text_iter))
-                except StopIteration:
-                    break
-            elif line == '':
-                new_lines.append(line)
-            else:
-                new_lines.append(line)  # Fallback in case of unexpected lines
-
-        new_content = '\n'.join(new_lines)
-
-        # Download Button
-        st.download_button(
-            label="Download Translated SRT File",
-            data=new_content,
-            file_name="translated_subtitles.srt",
-            mime="text/plain"
-        )
 
 # Footer
 st.markdown(
